@@ -1,19 +1,26 @@
 use std::env;
-use std::fs;
+use std::process;
+
+use grep_in_rust::{run, Config};
 
 fn main() {
     // collect arguments in stdin as vector
     let args: Vec<String> = env::args().collect();
-    println!("{:#?}", args);
 
-    let query = &args[1];
-    let filename = &args[2];
+    // try to create a new Config with args;
+    // if err print err;
+    // else unwrap from Result<Config, ...>
+    let config = Config::new(&args).unwrap_or_else(|err| {
+        println!("problem parsing arguments: {}", err);
+        process::exit(1);
+    });
 
-    println!("In file: {}", filename);
-
-    // read the file
-    let contents = fs::read_to_string(filename).expect("Could not read the file!");
-
-    println!("With text: {}\n", contents);
+    // explicitly checking for error as there is no need to unwrap.
+    if let Err(e) = run(config) {
+        println!("Application Error: {}", e);
+        process::exit(1);
+    }
 }
+
+
 
