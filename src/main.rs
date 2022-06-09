@@ -11,13 +11,15 @@ fn main() {
     // if err print err;
     // else unwrap from Result<Config, ...>
     let config = Config::new(&args).unwrap_or_else(|err| {
-        println!("problem parsing arguments: {}", err);
+        // using stderr for errors.
+        eprintln!("problem parsing arguments: {}", err);
         process::exit(1);
     });
 
     // explicitly checking for error as there is no need to unwrap.
     if let Err(e) = run(config) {
-        println!("Application Error: {}", e);
+        // using stderr for errors.
+        eprintln!("Application Error: {}", e);
         process::exit(1);
     }
 }
