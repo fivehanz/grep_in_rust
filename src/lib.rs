@@ -1,32 +1,38 @@
-use std::fs;
-use std::error::Error;
 use std::env;
+use std::error::Error;
+use std::fs;
 
+// declare struct type for config
 pub struct Config {
     pub query: String,
     pub filename: String,
     pub case_sensitive: bool,
 }
 
+// implement methods for type Config
 impl Config {
-    pub fn new(args: &[String]) -> Result<Config, &'static str> {
-        // sanity checks
-        if args.len() < 3 {
-            return Err("Not enough arguments");
-        }
+    // args has type std::env::Args;
+    // ownership of 'args' is taken, hence 'mut'
+    pub fn new(mut args: env::Args) -> Result<Config, &'static str> {
+        // ignoring the first element by consuming it.
+        args.next();
 
         // query, filename, case_sensitive
-        Ok(
-            Config {
-                query: args[1].clone(),
-                filename: args[2].clone(),
-                case_sensitive: env::var("CASE_INSENSITIVE").is_err(),
-            }
-        )
+        Ok(Config {
+            query: match args.next() {
+                Some(arg) => arg,
+                None => return Err("Did not receive a query string."),
+            },
+            filename: match args.next() {
+                Some(arg) => arg,
+                None => return Err("Did not receive a file name"),
+            },
+            case_sensitive: env::var("CASE_INSENSITIVE").is_err(),
+        })
     }
 }
 
-pub fn run(config: Config) -> Result<(), Box<dyn Error>>{
+pub fn run(config: Config) -> Result<(), Box<dyn Error>> {
     // read the file
     let contents = fs::read_to_string(config.filename)?;
 
@@ -46,32 +52,40 @@ pub fn run(config: Config) -> Result<(), Box<dyn Error>>{
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let mut results = Vec::new();
+    // let mut results = Vec::new();
+    //
+    // // push lines with query match to results
+    // for line in contents.lines() {
+    //     if line.contains(query) {
+    //         results.push(line);
+    //     }
+    // }
+    //
+    // results
 
-    // push lines with query match to results
-    for line in contents.lines() {
-        if line.contains(query) {
-            results.push(line);
-        }
-    }
-
-    results
+    contents
+        .lines()
+        .filter(|line| line.contains(query))
+        .collect()
 }
 
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    let query = query.to_lowercase();
-    let mut results = Vec::new();
-
-    // push lines with query match to results
-    for line in contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            results.push(line);
-        }
-    }
-
-    results
+    // let query = query.to_lowercase();
+    // let mut results = Vec::new();
+    //
+    // // push lines with query match to results
+    // for line in contents.lines() {
+    //     if line.to_lowercase().contains(&query) {
+    //         results.push(line);
+    //     }
+    // }
+    //
+    // results
+    contents
+        .lines()
+        .filter(|line| line.to_lowercase().contains(&query.to_lowercase()))
+        .collect()
 }
-
 
 #[cfg(test)]
 mod tests {
@@ -85,10 +99,7 @@ Rust:
 safe, fast, productive.
 Pick three.";
 
-        assert_eq!(
-            vec!["safe, fast, productive."],
-            search(query, contents)
-        );
+        assert_eq!(vec!["safe, fast, productive."], search(query, contents));
     }
 
     #[test]
